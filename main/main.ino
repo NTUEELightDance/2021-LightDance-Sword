@@ -23,12 +23,13 @@ LedManager ledMgr;
 
 void testEvent(String s) {
   if (s[2] == 'u'){
+    Serial.println("upload");
     ledMgr.pause();
     ledMgr.parsing_json(s);
   }
 
   else {
-    DynamicJsonDocument doc(100);
+    DynamicJsonDocument doc(300);
     deserializeJson(doc, s);
     serializeJson(doc, Serial);
     Serial.println();
@@ -43,7 +44,7 @@ void testEvent(String s) {
       ledMgr.pause_dark();
     }
     else if (doc[0] == "lightCurrentStatus"){
-  //    ledMgr.light_current_status(s);
+      ledMgr.light_current_status(doc[1]);
     }
   }
 }
@@ -120,7 +121,7 @@ void webSocketEvent(WStype_t type, uint8_t *payload, size_t length)
         
         else if (ss == "lightCurrentStatus")
         {
-          DynamicJsonDocument s_json = doc[1];
+          StaticJsonDocument<300> s_json = doc[1];
           serializeJson(s_json, Serial);
           ledMgr.light_current_status(s_json);
           snprintf(str, 110, "[\"lightCurrentStatus\",{\"OK\": \"true\", \"msg\": \"Success\"}]");
@@ -201,13 +202,8 @@ void loop()
   
   // if (Serial.available() > 0) {
   //   String s = Serial.readString();
-  //   char* char_s = "[{\"start\": 0,\"fade\": false, \"status\": {\"led_sword\": {\"src\": \"green\", \"alpha\": 1},}},\
-  //   {\"start\": 3000,\"fade\": false, \"status\": {\"led_sword\": {\"src\": \"blue\", \"alpha\": 1},}},\
-  //   {\"start\": 6000,\"fade\": false, \"status\": {\"led_sword\": {\"src\": \"dark\", \"alpha\": 0},}},\
-  //   {\"start\": 90000,\"fade\": false, \"status\": {\"led_sword\": {\"src\": \"red\", \"alpha\": 1},}}\
-  //   ]";
   //   testEvent(s);
-//    delay(3000);
-//    testEvent(char* "[\"play\"]");
+  //   delay(3000);
   // }
+
 }

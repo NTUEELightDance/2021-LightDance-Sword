@@ -60,13 +60,12 @@ class LedManager{
 
     bool parsing_json(const char* data) {
       error = deserializeJson(led_json, data); 
-//      if(error) {
-//        Serial.println("Parsing Error: led_json");
-//        Serial.println(error.c_str());
-//        return false;
-//      }
+      if(error) {
+        Serial.println("Parsing Error: led_json");
+        Serial.println(error.c_str());
+        return false;
+      }
       serializeJson(led_json[1], Serial);
-      serializeJson(led_json[1][0]["start"], Serial);
       Serial.println();
       Serial.println(led_json[1].size());
       return true;
@@ -159,13 +158,10 @@ class LedManager{
       
       JsonArray pic_sword = pic_json[src_sword]; // The picture at this time, every led is represented as one string, eg: "0x00FF00"
       serializeJson(pic_sword, Serial);
-      Serial.println();
       JsonArray pic_guard = pic_json[src_guard]; // The picture at this time, every led is represented as one string, eg: "0x00FF00"
       serializeJson(pic_guard, Serial);
-      Serial.println();
       JsonArray pic_handle = pic_json[src_handle]; // The picture at this time, every led is represented as one string, eg: "0x00FF00"
       serializeJson(pic_handle, Serial);
-      Serial.println();
       
       for(int i = 0; i < KNIFE_NUM; i++) {
         KNIFE_leds[i] = strtol(pic_sword[i], NULL, 0);
@@ -247,10 +243,9 @@ class LedManager{
 
 
   private:
-    // StaticJsonDocument<20000> led_json; 
-    StaticJsonDocument<30000> led_json;
-    StaticJsonDocument<50000> pic_json; 
-    StaticJsonDocument<2000> status;
+    StaticJsonDocument<10000> pic_json; 
+    StaticJsonDocument<200> status;
+    StaticJsonDocument<70000> led_json;
 //    JsonArray status;
 //    StaticJsonDocument<5000> tmp_json;
 
