@@ -22,27 +22,29 @@ LedManager ledMgr;
 
 
 void testEvent(String s) {
-  DynamicJsonDocument doc(5000);
-  deserializeJson(doc, s);
-  serializeJson(doc, Serial);
-  Serial.println();
-  if (doc[0] == "play") {
-    ledMgr.prepare_to_play(doc[1]["startTime"]);
-    ledMgr.play();
-  }
-  else if (doc[0] == "pause") {
+  if (s[2] == 'u'){
     ledMgr.pause();
+    ledMgr.parsing_json(s);
   }
-  else if (doc[0] == "stop") {
-    ledMgr.pause_dark();
-  }
-  else if (doc[0] == "lightCurrentStatus"){
-//    ledMgr.light_current_status(s);
-  }
-  else if (doc[0] == "uploadControl"){
-      JsonArray s_json_array = doc[1];
+
+  else {
+    DynamicJsonDocument doc(100);
+    deserializeJson(doc, s);
+    serializeJson(doc, Serial);
+    Serial.println();
+    if (doc[0] == "play") {
+      ledMgr.prepare_to_play(doc[1]["startTime"]);
+      ledMgr.play();
+    }
+    else if (doc[0] == "pause") {
       ledMgr.pause();
-      ledMgr.parsing_json(s_json_array);
+    }
+    else if (doc[0] == "stop") {
+      ledMgr.pause_dark();
+    }
+    else if (doc[0] == "lightCurrentStatus"){
+  //    ledMgr.light_current_status(s);
+    }
   }
 }
 void webSocketEvent(WStype_t type, uint8_t *payload, size_t length)
@@ -67,45 +69,10 @@ void webSocketEvent(WStype_t type, uint8_t *payload, size_t length)
       Serial.println("Websocket client get text: ");
       Serial.println((char *)payload);
       Serial.println();
-      DynamicJsonDocument doc(10000); // TODO
-      deserializeJson(doc, (char *)payload);
-      String ss = doc[0];
 
-      
-      if (ss == "play")
-      {
-        ledMgr.prepare_to_play(doc[1]["startTime"]);
-        ledMgr.play();
-        char str[110];
-        snprintf(str, 110, "[\"play\",{\"OK\": \"true\", \"msg\": \"Success\"}]");
-        Serial.print("Send to server: ");
-        Serial.println(str);
-        webSocket.sendTXT(str);
-      }
-      
-      else if (ss == "pause")
-      {
+      if (*(((char *)payload) + 2) == 'u'){
         ledMgr.pause();
-        snprintf(str, 110, "[\"pause\",{\"OK\": \"true\", \"msg\": \"Success\"}]");
-        Serial.print("Send to server: ");
-        Serial.println(str);
-        webSocket.sendTXT(str);
-      }
-      
-      else if (ss == "stop")
-      {
-        ledMgr.pause_dark();
-        snprintf(str, 110, "[\"stop\",{\"OK\": \"true\", \"msg\": \"Success\"}]");
-        Serial.print("Send to server: ");
-        Serial.println(str);
-        webSocket.sendTXT(str);
-      }
-      
-      else if (ss == "uploadControl")
-      {
-        JsonArray s_json_array = doc[1];
-        ledMgr.pause();
-        if (ledMgr.parsing_json(s_json_array)){
+        if (ledMgr.parsing_json((char *)payload)) {
           snprintf(str, 110, "[\"uploadControl\",{\"OK\": \"true\", \"msg\": \"Success\"}]");
           Serial.print("Send to server: ");
           Serial.println(str);
@@ -118,16 +85,49 @@ void webSocketEvent(WStype_t type, uint8_t *payload, size_t length)
           webSocket.sendTXT(str);
         }
       }
-      
-      else if (ss == "lightCurrentStatus")
-      {
-        DynamicJsonDocument s_json = doc[1];
-        serializeJson(s_json, Serial);
-        ledMgr.light_current_status(s_json);
-        snprintf(str, 110, "[\"lightCurrentStatus\",{\"OK\": \"true\", \"msg\": \"Success\"}]");
-        Serial.print("Send to server: ");
-        Serial.println(str);
-        webSocket.sendTXT(str);
+      else {
+        DynamicJsonDocument doc(100); 
+        deserializeJson(doc, (char *)payload);
+        String ss = doc[0];
+        if (ss == "play")
+        {
+          ledMgr.prepare_to_play(doc[1]["startTime"]);
+          ledMgr.play();
+          char str[110];
+          snprintf(str, 110, "[\"play\",{\"OK\": \"true\", \"msg\": \"Success\"}]");
+          Serial.print("Send to server: ");
+          Serial.println(str);
+          webSocket.sendTXT(str);
+        }
+        
+        else if (ss == "pause")
+        {
+          ledMgr.pause();
+          snprintf(str, 110, "[\"pause\",{\"OK\": \"true\", \"msg\": \"Success\"}]");
+          Serial.print("Send to server: ");
+          Serial.println(str);
+          webSocket.sendTXT(str);
+        }
+        
+        else if (ss == "stop")
+        {
+          ledMgr.pause_dark();
+          snprintf(str, 110, "[\"stop\",{\"OK\": \"true\", \"msg\": \"Success\"}]");
+          Serial.print("Send to server: ");
+          Serial.println(str);
+          webSocket.sendTXT(str);
+        }
+        
+        else if (ss == "lightCurrentStatus")
+        {
+          DynamicJsonDocument s_json = doc[1];
+          serializeJson(s_json, Serial);
+          ledMgr.light_current_status(s_json);
+          snprintf(str, 110, "[\"lightCurrentStatus\",{\"OK\": \"true\", \"msg\": \"Success\"}]");
+          Serial.print("Send to server: ");
+          Serial.println(str);
+          webSocket.sendTXT(str);
+        }
       }
     break;
   }
@@ -195,19 +195,19 @@ bool testWifi(void) {
 
 void loop()
 {
-//  webSocket.loop();
+  webSocket.loop();
   ledMgr.loop();
        
   
-  if (Serial.available() > 0) {
-    String s = Serial.readString();
-    char* char_s = "[{\"start\": 0,\"fade\": false, \"status\": {\"led_sword\": {\"src\": \"green\", \"alpha\": 1},}},\
-    {\"start\": 3000,\"fade\": false, \"status\": {\"led_sword\": {\"src\": \"blue\", \"alpha\": 1},}},\
-    {\"start\": 6000,\"fade\": false, \"status\": {\"led_sword\": {\"src\": \"dark\", \"alpha\": 0},}},\
-    {\"start\": 90000,\"fade\": false, \"status\": {\"led_sword\": {\"src\": \"red\", \"alpha\": 1},}}\
-    ]";
-    testEvent(s);
+  // if (Serial.available() > 0) {
+  //   String s = Serial.readString();
+  //   char* char_s = "[{\"start\": 0,\"fade\": false, \"status\": {\"led_sword\": {\"src\": \"green\", \"alpha\": 1},}},\
+  //   {\"start\": 3000,\"fade\": false, \"status\": {\"led_sword\": {\"src\": \"blue\", \"alpha\": 1},}},\
+  //   {\"start\": 6000,\"fade\": false, \"status\": {\"led_sword\": {\"src\": \"dark\", \"alpha\": 0},}},\
+  //   {\"start\": 90000,\"fade\": false, \"status\": {\"led_sword\": {\"src\": \"red\", \"alpha\": 1},}}\
+  //   ]";
+  //   testEvent(s);
 //    delay(3000);
 //    testEvent(char* "[\"play\"]");
-  }
+  // }
 }

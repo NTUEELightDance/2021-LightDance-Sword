@@ -44,21 +44,31 @@ class LedManager{
       frame_idx = 0;
     }
 
-    bool parsing_json(JsonArray data) {
-//      serializeJson(data, Serial);
-//      error = deserializeJson(tmp_json, data); 
-//      serializeJson(tmp_json, Serial);
-//      led_json = tmp_json[1];
+    bool parsing_json(String data) {
+      error = deserializeJson(led_json, data); 
 //      if(error) {
 //        Serial.println("Parsing Error: led_json");
 //        Serial.println(error.c_str());
 //        return false;
 //      }
-      led_json = data;
-      serializeJson(led_json, Serial);
-      serializeJson(led_json[0]["start"], Serial);
+      serializeJson(led_json[1], Serial);
+      serializeJson(led_json[1][0]["start"], Serial);
       Serial.println();
-      Serial.println(led_json.size());
+      Serial.println(led_json[1].size());
+      return true;
+    }
+
+    bool parsing_json(const char* data) {
+      error = deserializeJson(led_json, data); 
+//      if(error) {
+//        Serial.println("Parsing Error: led_json");
+//        Serial.println(error.c_str());
+//        return false;
+//      }
+      serializeJson(led_json[1], Serial);
+      serializeJson(led_json[1][0]["start"], Serial);
+      Serial.println();
+      Serial.println(led_json[1].size());
       return true;
     }
 
@@ -91,24 +101,24 @@ class LedManager{
       JsonArray pic_sword;
       JsonArray pic_guard;
       JsonArray pic_handle;
-      String src_sword = led_json[frame_idx]["status"]["LED_SWORD"]["src"]; // A name, which responds to a picture
-      double alpha_sword = led_json[frame_idx]["status"]["LED_SWORD"]["alpha"];
+      String src_sword = led_json[1][frame_idx]["status"]["LED_SWORD"]["src"]; // A name, which responds to a picture
+      double alpha_sword = led_json[1][frame_idx]["status"]["LED_SWORD"]["alpha"];
       Serial.print("src_sword = ");
       Serial.println(src_sword);
       pic_sword = pic_json[src_sword]; // The picture at this time, every led is represented as one string, eg: "0x00FF00"
       Serial.print("pic_sword = ");
       serializeJson(pic_sword, Serial);
       Serial.println();
-      String src_guard = led_json[frame_idx]["status"]["LED_GUARD"]["src"];
-      double alpha_guard = led_json[frame_idx]["status"]["LED_GUARD"]["alpha"];
+      String src_guard = led_json[1][frame_idx]["status"]["LED_GUARD"]["src"];
+      double alpha_guard = led_json[1][frame_idx]["status"]["LED_GUARD"]["alpha"];
       Serial.print("src_guard = ");
       Serial.println(src_guard);
       pic_guard = pic_json[src_guard];
       Serial.print("pic_guard = ");
       serializeJson(pic_guard, Serial);
       Serial.println();
-      String src_handle = led_json[frame_idx]["status"]["LED_HANDLE"]["src"];
-      double alpha_handle = led_json[frame_idx]["status"]["LED_HANDLE"]["alpha"];
+      String src_handle = led_json[1][frame_idx]["status"]["LED_HANDLE"]["src"];
+      double alpha_handle = led_json[1][frame_idx]["status"]["LED_HANDLE"]["alpha"];
       Serial.print("src_handle = ");
       Serial.println(src_handle);
       pic_handle = pic_json[src_handle];
@@ -127,9 +137,6 @@ class LedManager{
       }
       
       Serial.print(millis());
-      Serial.print(src_sword);
-      Serial.print(src_guard);
-      Serial.print(src_handle);
       Serial.print("  ");
       Serial.println(playing_time);
       FastLED.show();
@@ -175,17 +182,19 @@ class LedManager{
 
     void set_frame_idx() {
       // To set the frame index, according to the playing time and the timeline
-      while(!frame_end() && playing_time >= led_json[frame_idx + 1]["start"]) {
+      while(!frame_end() && playing_time >= led_json[1][frame_idx + 1]["start"]) {
         frame_idx += 1;
       }
-      while(frame_idx != 0 && playing_time < led_json[frame_idx]["start"]) {
+      while(frame_idx != 0 && playing_time < led_json[1][frame_idx]["start"]) {
         frame_idx -= 1;
       }
     }
 
     bool frame_end() {
-      if(frame_idx == led_json.size() - 2)
+      if(frame_idx == led_json[1].size() - 1){
+        Serial.println("end of frame");
         return true;
+      }
       return false;
     }
 
@@ -213,7 +222,7 @@ class LedManager{
 //        Serial.print("frame_idx:");
 //        Serial.print(frame_idx);
         Serial.print(" led_json[frame_idx][\"start\"]:");
-        serializeJson(led_json[frame_idx]["start"], Serial);
+        serializeJson(led_json[1][frame_idx]["start"], Serial);
         Serial.println();
         if(frame_end()) {
           playing = false;
@@ -221,15 +230,15 @@ class LedManager{
           playing_time = 0;
           frame_idx = 0;
         }
-        else if(playing_time > led_json[frame_idx+1]["start"]){
+        else if(playing_time > led_json[1][frame_idx+1]["start"]){
           Serial.println(playing_time);
-          serializeJson(led_json[frame_idx+1]["start"], Serial);
+          serializeJson(led_json[1][frame_idx+1]["start"], Serial);
           Serial.println();
           frame_idx = frame_idx + 1;
           Serial.println("showing frame");
           show_frame();
         }
-        else if (led_json[0]["start"] == 0 && playing_time == 0) {
+        else if (led_json[1][0]["start"] == 0 && playing_time == 0) {
           show_frame();
         }
       }
@@ -239,11 +248,11 @@ class LedManager{
 
   private:
     // StaticJsonDocument<20000> led_json; 
-    JsonArray led_json;
+    StaticJsonDocument<30000> led_json;
     StaticJsonDocument<50000> pic_json; 
     StaticJsonDocument<2000> status;
 //    JsonArray status;
-    StaticJsonDocument<5000> tmp_json;
+//    StaticJsonDocument<5000> tmp_json;
 
     const char* uploadControl_json = "[\"uploadControl\",[{\"start\":0,\"fade\":false,\"status\":{\"LED_HANDLE\":{\"src\":\"bl_handle\",\"alpha\":0},\"LED_GUARD\":{\"src\":\"bl_guard\",\"alpha\":0},\"LED_SWORD\":{\"src\":\"bl_sword\",\"alpha\":0}}}]]";
 
