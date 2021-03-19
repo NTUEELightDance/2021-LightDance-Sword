@@ -20,9 +20,12 @@ int doc;
 WebSocketsClient webSocket;
 LedManager ledMgr;
 
+
 void testEvent(String s) {
-  DynamicJsonDocument doc(1024);
+  DynamicJsonDocument doc(5000);
   deserializeJson(doc, s);
+  serializeJson(doc, Serial);
+  Serial.println();
   if (doc[0] == "play") {
     ledMgr.prepare_to_play(doc[1]["startTime"]);
     ledMgr.play();
