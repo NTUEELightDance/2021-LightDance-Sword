@@ -30,7 +30,7 @@ class LedManager{
       FastLED.addLeds<WS2812B, KNIFE_PIN, GRB>(KNIFE_leds, KNIFE_NUM);  //設定串列全彩LED參數
       FastLED.addLeds<WS2812B, SHIELD_PIN, GRB>(SHIELD_leds, SHIELD_NUM);  //設定串列全彩LED參數
       FastLED.addLeds<WS2812B, HANDLE_PIN, GRB>(HANDLE_leds, HANDLE_NUM);  //設定串列全彩LED參數
-      FastLED.setBrightness(32); // TODO: change to 255
+      FastLED.setBrightness(255); // TODO: change to 255
       
       error = deserializeJson(pic_json, pic_data); // debug
       if(error) {
@@ -71,12 +71,13 @@ class LedManager{
       return true;
     }
 
-    void prepare_to_play(unsigned long s_time = 0) {
+    void prepare_to_play(unsigned long s_time = 0, unsigned long delay_time = 0) {
       Serial.print("play from: ");
       Serial.println(s_time);
       playing_time = s_time;
       starting_time = s_time;
       set_frame_idx();
+      delay(delay_time);
     }
   
     void play() {
@@ -121,18 +122,18 @@ class LedManager{
       JsonArray pic_handle;
       String src_sword = led_json[1][frame_idx]["status"]["LED_SWORD"]["src"]; // A name, which responds to a picture
       double alpha_sword = led_json[1][frame_idx]["status"]["LED_SWORD"]["alpha"];
-      Serial.print("src_sword = ");
-      Serial.print(src_sword);
+      // Serial.print("src_sword = ");
+      // Serial.print(src_sword);
       pic_sword = pic_json[src_sword]; // The picture at this time, every led is represented as one string, eg: "0x00FF00"
       String src_guard = led_json[1][frame_idx]["status"]["LED_GUARD"]["src"];
       double alpha_guard = led_json[1][frame_idx]["status"]["LED_GUARD"]["alpha"];
-      Serial.print("  src_guard = ");
-      Serial.print(src_guard);
+      // Serial.print("  src_guard = ");
+      // Serial.print(src_guard);
       pic_guard = pic_json[src_guard];
       String src_handle = led_json[1][frame_idx]["status"]["LED_HANDLE"]["src"];
       double alpha_handle = led_json[1][frame_idx]["status"]["LED_HANDLE"]["alpha"];
-      Serial.print("  src_handle = ");
-      Serial.println(src_handle);
+      // Serial.print("  src_handle = ");
+      // Serial.println(src_handle);
       pic_handle = pic_json[src_handle];
       int now_time = led_json[1][frame_idx]["start"];
 

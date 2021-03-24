@@ -34,7 +34,7 @@ void testEvent(String s) {
     serializeJson(doc, Serial);
     Serial.println();
     if (doc[0] == "play") {
-      ledMgr.prepare_to_play(doc[1]["startTime"]);
+      ledMgr.prepare_to_play(doc[1]["startTime"], doc[1]["delay"]);
       ledMgr.play();
     }
     else if (doc[0] == "pause") {
@@ -92,7 +92,7 @@ void webSocketEvent(WStype_t type, uint8_t *payload, size_t length)
         String ss = doc[0];
         if (ss == "play")
         {
-          ledMgr.prepare_to_play(doc[1]["startTime"]);
+          ledMgr.prepare_to_play(doc[1]["startTime"], doc[1]["delay"]);
           ledMgr.play();
           char str[110];
           snprintf(str, 110, "[\"play\",{\"OK\": \"true\", \"msg\": \"Success\"}]");
@@ -202,7 +202,7 @@ void loop()
   if (Serial.available() > 0) {
     String s = Serial.readString();
     testEvent(s);
-    delay(3000);
+    // delay(3000);
   }
 
 }
