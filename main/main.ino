@@ -196,14 +196,13 @@ bool testWifi(void) {
 
 void loop()
 {
-  webSocket.loop();
+  // webSocket.loop();
   ledMgr.loop();
-       
-  
-  // if (Serial.available() > 0) {
-  //   String s = Serial.readString();
-  //   testEvent(s);
-  //   delay(3000);
-  // }
+      
+  if (Serial.available() > 0) {
+    String s = Serial.readString();
+    testEvent(s);
+    delay(3000);
+  }
 
 }
