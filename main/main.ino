@@ -8,7 +8,7 @@
 #include <ArduinoJson.h>
 #include "LedManager.h"
 
-#define NAME "sword1"
+#define NAME "sword6"
 #define WIFI_NAME "MakerSpace_2.4G" // TODO
 #define WIFI_PWD "ntueesaad" // TODO
 #define SERVER_IP "192.168.0.200" // TODO
@@ -196,13 +196,12 @@ bool testWifi(void) {
 
 void loop()
 {
-  // webSocket.loop();
+  webSocket.loop();
   ledMgr.loop();
       
-  if (Serial.available() > 0) {
-    String s = Serial.readString();
-    testEvent(s);
-    // delay(3000);
-  }
+  // if (Serial.available() > 0) {
+  //   String s = Serial.readString();
+  //   testEvent(s);
+  // }
 
 }
