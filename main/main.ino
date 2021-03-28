@@ -8,7 +8,7 @@
 #include <ArduinoJson.h>
 #include "LedManager.h"
 
-#define NAME "sword6"
+#define NAME "sword8"
 #define WIFI_NAME "MakerSpace_2.4G" // TODO
 #define WIFI_PWD "ntueesaad" // TODO
 #define SERVER_IP "192.168.0.200" // TODO
@@ -87,7 +87,7 @@ void webSocketEvent(WStype_t type, uint8_t *payload, size_t length)
         }
       }
       else {
-        DynamicJsonDocument doc(100); 
+        DynamicJsonDocument doc(500); 
         deserializeJson(doc, (char *)payload);
         String ss = doc[0];
         if (ss == "play")
@@ -168,6 +168,7 @@ void setup()
   ledMgr.init();
   delay(1000);
   Serial.println("ready");
+  ledMgr.pause_dark();
 
 //  String char_s = "[[{\"start\": 0,\"fade\": false, \"status\": {\"led_sword\": {\"src\": \"green\", \"alpha\": 1},}},\
 //        {\"start\": 3000,\"fade\": false, \"status\": {\"led_sword\": {\"src\": \"blue\", \"alpha\": 1},}},\

@@ -13,9 +13,7 @@
 #define KNIFE_PIN 21  
 #define SHIELD_PIN 19
 #define HANDLE_PIN 18
-#define KNIFE_BRIGHTNESS 32/255 
-#define SHIELD_BRIGHTNESS 10/255
-#define HANDLE_BRIGHTNESS 10/255
+#define BRIGHTNESS 32
 
 
 class LedManager{
@@ -30,7 +28,7 @@ class LedManager{
       FastLED.addLeds<WS2812B, KNIFE_PIN, GRB>(KNIFE_leds, KNIFE_NUM);  //設定串列全彩LED參數
       FastLED.addLeds<WS2812B, SHIELD_PIN, GRB>(SHIELD_leds, SHIELD_NUM);  //設定串列全彩LED參數
       FastLED.addLeds<WS2812B, HANDLE_PIN, GRB>(HANDLE_leds, HANDLE_NUM);  //設定串列全彩LED參數
-      FastLED.setBrightness(255); // TODO: change to 255
+      FastLED.setBrightness(BRIGHTNESS); // TODO: change to 255
       
       error = deserializeJson(pic_json, pic_data_test); // debug
       if(error) {
@@ -77,7 +75,7 @@ class LedManager{
       playing_time = s_time;
       starting_time = s_time;
       set_frame_idx();
-      delay(delay_time);
+      delay(delay_time - 45);
     }
   
     void play() {
@@ -258,43 +256,99 @@ class LedManager{
 //      }
 //      status = tmp_json[1];
 //      status = data;
-      String src_sword = data["led_sword"]["src"]; 
-      double alpha_sword = data["led_sword"]["alpha"];
-      String src_guard = data["led_guard"]["src"]; 
-      double alpha_guard = data["led_guard"]["alpha"];
-      String src_handle = data["led_handle"]["src"]; 
-      double alpha_handle = data["led_handle"]["alpha"];
+      JsonObject tmp_data = data.as<JsonObject>();
+      String src_sword = tmp_data["LED_SWORD"]["src"]; 
+      double alpha_sword = tmp_data["LED_SWORD"]["alpha"];
+      String src_guard = tmp_data["LED_GUARD"]["src"]; 
+      double alpha_guard = tmp_data["LED_GUARD"]["alpha"];
+      String src_handle = data["LED_HANDLE"]["src"]; 
+      double alpha_handle = data["LED_HANDLE"]["alpha"];
 
-      JsonArray pic_sword = pic_json[src_sword]; // The picture at this time, every led is represented as one string, eg: "0x00FF00"
-      serializeJson(pic_sword, Serial);
-      JsonArray pic_guard = pic_json[src_guard]; // The picture at this time, every led is represented as one string, eg: "0x00FF00"
-      serializeJson(pic_guard, Serial);
-      JsonArray pic_handle = pic_json[src_handle]; // The picture at this time, every led is represented as one string, eg: "0x00FF00"
-      serializeJson(pic_handle, Serial);
+      JsonObject tmp_obj = pic_json.as<JsonObject>(); // The picture at this time, every led is represented as one string, eg: "0x00FF00"
+      String pic_sword = tmp_obj[src_sword];
+      String pic_guard = tmp_obj[src_guard];
+      String pic_handle = tmp_obj[src_handle];
       
-      for(int i = 0; i < KNIFE_NUM; i++) {
-        // KNIFE_leds[i] = strtol(pic_sword[i], NULL, 0);
-        KNIFE_leds[i].r = hex_to_num(pic_sword[i], 'r') * alpha_sword;
-        KNIFE_leds[i].g = hex_to_num(pic_sword[i], 'g') * alpha_sword;
-        KNIFE_leds[i].b = hex_to_num(pic_sword[i], 'b') * alpha_sword;
+      int led_num = 0;
+      int last = 0;
+      int front = 0;
+      while(1) {
+        if(pic_sword[front] == ' ') {
+          int num = atoi(pic_sword.substring(last, front).c_str());
+          for(int j = 0; j < num; j++) {
+            KNIFE_leds[j+led_num].r = hex_to_num(pic_sword.substring(front + 1, front + 9), 'r') * alpha_sword;
+            KNIFE_leds[j+led_num].b = hex_to_num(pic_sword.substring(front + 1, front + 9), 'b') * alpha_sword;
+            KNIFE_leds[j+led_num].g = hex_to_num(pic_sword.substring(front + 1, front + 9), 'g') * alpha_sword;
+          }
+          if(pic_sword.length() > front + 12) {
+            front = front + 10;
+            last = front;
+            led_num += num;
+          }
+          else {
+            break;
+          }
+        }
+        else {
+          front += 1;
+        }
       }
-      for(int i = 0; i < 8; i++) {
-        // SHIELD_leds[i] = strtol(pic_handle[i], NULL, 0);
-        SHIELD_leds[i].r = hex_to_num(pic_handle[i], 'r') * alpha_guard;
-        SHIELD_leds[i].g = hex_to_num(pic_handle[i], 'g') * alpha_guard;
-        SHIELD_leds[i].b = hex_to_num(pic_handle[i], 'b') * alpha_guard;
+
+      led_num = 8;
+      last = 0;
+      front = 0;
+      while(1) {
+        if(pic_guard[front] == ' ') {
+          int num = atoi(pic_guard.substring(last, front).c_str());
+          for(int j = 0; j < num; j++) {
+            SHIELD_leds[j+led_num].r = hex_to_num(pic_guard.substring(front + 1, front + 9), 'r') * alpha_guard;
+            SHIELD_leds[j+led_num].b = hex_to_num(pic_guard.substring(front + 1, front + 9), 'b') * alpha_guard;
+            SHIELD_leds[j+led_num].g = hex_to_num(pic_guard.substring(front + 1, front + 9), 'g') * alpha_guard;
+          }
+          if(pic_guard.length() > front + 12) {
+            front = front + 10;
+            last = front;
+            led_num += num;
+          }
+          else {
+            break;
+          }
+        }
+        else {
+          front += 1;
+        }
       }
-      for(int i = 0; i < 18; i++) {
-        // SHIELD_leds[i+8] = strtol(pic_guard[i], NULL, 0);
-        SHIELD_leds[i+8].r = hex_to_num(pic_guard[i], 'r') * alpha_guard;
-        SHIELD_leds[i+8].g = hex_to_num(pic_guard[i], 'g') * alpha_guard;
-        SHIELD_leds[i+8].b = hex_to_num(pic_guard[i], 'b') * alpha_guard;
-      }
-      for(int i = 0; i < 8; i++) {
-        // HANDLE_leds[i] = strtol(pic_handle[i+i], NULL, 0);
-        HANDLE_leds[i].r = hex_to_num(pic_handle[i+8], 'r') * alpha_handle;
-        HANDLE_leds[i].g = hex_to_num(pic_handle[i+8], 'g') * alpha_handle;
-        HANDLE_leds[i].b = hex_to_num(pic_handle[i+8], 'b') * alpha_handle;
+
+      led_num = 0;
+      last = 0;
+      front = 0;
+      while(1) {
+        if(pic_handle[front] == ' ') {
+          int num = atoi(pic_handle.substring(last, front).c_str());
+          for(int j = 0; j < num; j++) {
+            if((j+led_num) >= 8) {
+              HANDLE_leds[j+led_num - 8].r = hex_to_num(pic_handle.substring(front + 1, front + 9), 'r') * alpha_handle;
+              HANDLE_leds[j+led_num - 8].b = hex_to_num(pic_handle.substring(front + 1, front + 9), 'b') * alpha_handle;
+              HANDLE_leds[j+led_num - 8].g = hex_to_num(pic_handle.substring(front + 1, front + 9), 'g') * alpha_handle;
+            }
+            else {
+              SHIELD_leds[j+led_num].r = hex_to_num(pic_handle.substring(front + 1, front + 9), 'r') * alpha_guard;
+              SHIELD_leds[j+led_num].b = hex_to_num(pic_handle.substring(front + 1, front + 9), 'b') * alpha_guard;
+              SHIELD_leds[j+led_num].g = hex_to_num(pic_handle.substring(front + 1, front + 9), 'g') * alpha_guard;
+            }
+          }
+          if(pic_handle.length() > front + 12) {
+            front = front + 10;
+            last = front;
+            led_num += num;
+          }
+          else {
+            break;
+          }
+        }
+        else {
+          front += 1;
+        }
       }
       
       FastLED.show();
@@ -335,15 +389,15 @@ class LedManager{
       if(playing) {
         // Serial.println("now playing");
         playing_time = millis() - starting_time_abs + starting_time;
-        Serial.print("playing_time: ");
-        Serial.print(playing_time);
+        // Serial.print("playing_time: ");
+        // Serial.print(playing_time);
         // Serial.print("starting_time_abs: ");
         // Serial.println(starting_time_abs);
         // Serial.print("frame_idx:");
         // Serial.print(frame_idx);
-        Serial.print(" led_json[1][frame_idx][\"start\"]:");
-        serializeJson(led_json[1][frame_idx]["start"], Serial);
-        Serial.println();
+        // Serial.print(" led_json[1][frame_idx][\"start\"]:");
+        // serializeJson(led_json[1][frame_idx]["start"], Serial);
+        // Serial.println();
         if(frame_end()) {
           playing = false;
           starting_time_abs = 0;
@@ -384,14 +438,20 @@ class LedManager{
 
 
   private:
-    StaticJsonDocument<60000> led_json;
-    StaticJsonDocument<20000> pic_json; 
+    StaticJsonDocument<70000> led_json;
+    StaticJsonDocument<10000> pic_json; 
     StaticJsonDocument<200> status;
 
 //    JsonArray status;
 //    StaticJsonDocument<5000> tmp_json;
 
     const char* pic_data_test = "{\
+      \"bl_sword\": \"59 0x000000\", \
+      \"bl_guard\": \"18 0x000000\", \
+      \"bl_handle\": \"16 0x000000\", \
+      \"white_sword\": \"59 0xFFFFFF\", \
+      \"white_guard\": \"18 0xFFFFFF\", \
+      \"white_handle\": \"16 0xFFFFFF\", \
       \"red_sword\": \"59 0xFF0000\", \
       \"red_guard\": \"18 0xFF0000\", \
       \"red_handle\": \"16 0xFF0000\", \
@@ -401,36 +461,46 @@ class LedManager{
       \"green_sword\": \"59 0x00FF00\", \
       \"green_guard\": \"18 0x00FF00\", \
       \"green_handle\": \"16 0x00FF00\", \
-      \"red_sword_1\":\"1 0xFF0000 58 0x000000 1 0xFF0000\", \
-      \"red_sword_2\":\"2 0xFF0000 56 0x000000 2 0xFF0000\", \
-      \"red_sword_3\":\"3 0xFF0000 54 0x000000 3 0xFF0000\", \
-      \"red_sword_4\":\"4 0xFF0000 52 0x000000 4 0xFF0000\", \
-      \"red_sword_5\":\"5 0xFF0000 50 0x000000 5 0xFF0000\", \
-      \"red_sword_6\":\"6 0xFF0000 48 0x000000 6 0xFF0000\", \
-      \"red_sword_7\":\"7 0xFF0000 46 0x000000 7 0xFF0000\", \
-      \"red_sword_8\":\"8 0xFF0000 44 0x000000 8 0xFF0000\", \
-      \"red_sword_9\":\"9 0xFF0000 42 0x000000 9 0xFF0000\", \
-      \"red_sword_10\":\"10 0xFF0000 40 0x000000 10 0xFF0000\", \
-      \"red_sword_11\":\"11 0xFF0000 38 0x000000 11 0xFF0000\", \
-      \"red_sword_12\":\"12 0xFF0000 36 0x000000 12 0xFF0000\", \
-      \"red_sword_13\":\"13 0xFF0000 34 0x000000 13 0xFF0000\", \
-      \"red_sword_14\":\"14 0xFF0000 32 0x000000 14 0xFF0000\", \
-      \"red_sword_15\":\"15 0xFF0000 30 0x000000 15 0xFF0000\", \
-      \"red_sword_16\":\"16 0xFF0000 28 0x000000 16 0xFF0000\", \
-      \"red_sword_17\":\"17 0xFF0000 26 0x000000 17 0xFF0000\", \
-      \"red_sword_18\":\"18 0xFF0000 24 0x000000 18 0xFF0000\", \
-      \"red_sword_19\":\"19 0xFF0000 22 0x000000 19 0xFF0000\", \
-      \"red_sword_20\":\"20 0xFF0000 20 0x000000 20 0xFF0000\", \
-      \"red_sword_21\":\"21 0xFF0000 18 0x000000 21 0xFF0000\", \
-      \"red_sword_22\":\"22 0xFF0000 16 0x000000 22 0xFF0000\", \
-      \"red_sword_23\":\"23 0xFF0000 14 0x000000 23 0xFF0000\", \
-      \"red_sword_24\":\"24 0xFF0000 12 0x000000 24 0xFF0000\", \
-      \"red_sword_25\":\"25 0xFF0000 10 0x000000 25 0xFF0000\", \
-      \"red_sword_26\":\"26 0xFF0000 8 0x000000 26 0xFF0000\", \
-      \"red_sword_27\":\"27 0xFF0000 6 0x000000 27 0xFF0000\", \
-      \"red_sword_28\":\"28 0xFF0000 4 0x000000 28 0xFF0000\", \
-      \"red_sword_29\":\"29 0xFF0000 2 0x000000 29 0xFF0000\", \
-      \"red_sword_30\":\"30 0xFF0000 0 0x000000 30 0xFF0000\" \
+      \"purple_sword\": \"59 0xFF00FF\", \
+      \"purple_guard\": \"18 0xFF00FF\", \
+      \"purple_handle\": \"16 0xFF00FF\", \
+      \"yellow_sword\": \"59 0xFFFF00\", \
+      \"yellow_guard\": \"18 0xFFFF00\", \
+      \"yellow_handle\": \"16 0xFFFF00\", \
+      \"red_sword_1\":\"3 0xFF0000 54 0x000000 2 0xFF0000 \", \
+      \"red_sword_2\":\"1 0x000000 3 0xFF0000 52 0x000000 3 0xFF0000\", \
+      \"red_sword_3\":\"2 0x000000 3 0xFF0000 50 0x000000 3 0xFF0000 1 0x000000\", \
+      \"red_sword_4\":\"3 0x000000 3 0xFF0000 48 0x000000 3 0xFF0000 2 0x000000\", \
+      \"red_sword_5\":\"4 0x000000 3 0xFF0000 46 0x000000 3 0xFF0000 3 0x000000\", \
+      \"red_sword_6\":\"5 0x000000 3 0xFF0000 44 0x000000 3 0xFF0000 4 0x000000\", \
+      \"red_sword_7\":\"6 0x000000 3 0xFF0000 42 0x000000 3 0xFF0000 5 0x000000\", \
+      \"red_sword_8\":\"7 0x000000 3 0xFF0000 40 0x000000 3 0xFF0000 6 0x000000\", \
+      \"red_sword_9\":\"8 0x000000 3 0xFF0000 38 0x000000 3 0xFF0000 7 0x000000\", \
+      \"red_sword_10\":\"9 0x000000 3 0xFF0000 36 0x000000 3 0xFF0000 8 0x000000\", \
+      \"red_sword_11\":\"10 0x000000 3 0xFF0000 34 0x000000 3 0xFF0000 9 0x000000\", \
+      \"red_sword_12\":\"11 0x000000 3 0xFF0000 32 0x000000 3 0xFF0000 10 0x000000\", \
+      \"red_sword_13\":\"12 0x000000 3 0xFF0000 30 0x000000 3 0xFF0000 11 0x000000\", \
+      \"red_sword_14\":\"13 0x000000 3 0xFF0000 28 0x000000 3 0xFF0000 12 0x000000\", \
+      \"red_sword_15\":\"14 0x000000 3 0xFF0000 26 0x000000 3 0xFF0000 13 0x000000\", \
+      \"red_sword_16\":\"15 0x000000 3 0xFF0000 24 0x000000 3 0xFF0000 14 0x000000\", \
+      \"red_sword_17\":\"16 0x000000 3 0xFF0000 22 0x000000 3 0xFF0000 15 0x000000\", \
+      \"red_sword_18\":\"17 0x000000 3 0xFF0000 20 0x000000 3 0xFF0000 16 0x000000\", \
+      \"red_sword_19\":\"18 0x000000 3 0xFF0000 18 0x000000 3 0xFF0000 17 0x000000\", \
+      \"red_sword_20\":\"19 0x000000 3 0xFF0000 16 0x000000 3 0xFF0000 18 0x000000\", \
+      \"red_sword_21\":\"20 0x000000 3 0xFF0000 14 0x000000 3 0xFF0000 19 0x000000\", \
+      \"red_sword_22\":\"21 0x000000 3 0xFF0000 12 0x000000 3 0xFF0000 20 0x000000\", \
+      \"red_sword_23\":\"22 0x000000 3 0xFF0000 10 0x000000 3 0xFF0000 21 0x000000\", \
+      \"red_sword_24\":\"23 0x000000 3 0xFF0000 8 0x000000 3 0xFF0000 22 0x000000\", \
+      \"red_sword_25\":\"24 0x000000 3 0xFF0000 6 0x000000 3 0xFF0000 23 0x000000\", \
+      \"red_sword_26\":\"25 0x000000 3 0xFF0000 4 0x000000 3 0xFF0000 24 0x000000\", \
+      \"red_sword_27\":\"26 0x000000 3 0xFF0000 2 0x000000 3 0xFF0000 25 0x000000\", \
+      \"red_sword_28\":\"27 0x000000 6 0xFF0000 26 0x000000\", \
+      \"red_sword_ending_1\":\"26 0xFF0000 7 0x000000 26 0xFF0000\", \
+      \"red_sword_ending_2\":\"22 0xFF0000 15 0x000000 22 0xFF0000\", \
+      \"red_sword_ending_3\":\"18 0xFF0000 23 0x000000 18 0xFF0000\", \
+      \"red_sword_ending_4\":\"14 0xFF0000 31 0x000000 14 0xFF0000\", \
+      \"red_sword_ending_5\":\"10 0xFF0000 39 0x000000 10 0xFF0000\", \
+      \"red_sword_ending_6\":\"6 0xFF0000 47 0x000000 6 0xFF0000\" \
     }";
 
     // TODO
