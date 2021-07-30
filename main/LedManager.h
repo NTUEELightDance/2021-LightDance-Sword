@@ -5,30 +5,22 @@
 #include <ArduinoJson.h>
 #include <typeinfo>
 
-#define NAME "sword1"
-
+// led numbers, led pins, brightness info
 #define KNIFE_NUM 60
-#define SHIELD_NUM 26  
+#define GUARD_NUM 26  
 #define HANDLE_NUM 8
-#define KNIFE_PIN 21  
-#define SHIELD_PIN 19
-#define HANDLE_PIN 18
+#define KNIFE_PIN 27  
+#define GUARD_PIN 26
+#define HANDLE_PIN 25
 #define BRIGHTNESS 32
-
 
 class LedManager{
   public:
-//    LedManager(): starting_time_abs(0), playing_time(0), playing(false) {
-//    }
-//    ~LedManager() {}
-    
-
-
     void init() {
       FastLED.addLeds<WS2812B, KNIFE_PIN, GRB>(KNIFE_leds, KNIFE_NUM);  //設定串列全彩LED參數
-      FastLED.addLeds<WS2812B, SHIELD_PIN, GRB>(SHIELD_leds, SHIELD_NUM);  //設定串列全彩LED參數
+      FastLED.addLeds<WS2812B, GUARD_PIN, GRB>(GUARD_leds, GUARD_NUM);  //設定串列全彩LED參數
       FastLED.addLeds<WS2812B, HANDLE_PIN, GRB>(HANDLE_leds, HANDLE_NUM);  //設定串列全彩LED參數
-      FastLED.setBrightness(BRIGHTNESS); // TODO: change to 255
+      FastLED.setBrightness(BRIGHTNESS); 
       
       error = deserializeJson(pic_json, pic_data_test); // debug
       if(error) {
@@ -43,12 +35,10 @@ class LedManager{
     }
 
     bool parsing_json(String data) {
+      /*
+      Get the timeline and the patterns.
+      */
       error = deserializeJson(led_json, data); 
-//      if(error) {
-//        Serial.println("Parsing Error: led_json");
-//        Serial.println(error.c_str());
-//        return false;
-//      }
       serializeJson(led_json[1], Serial);
       serializeJson(led_json[1][0]["start"], Serial);
       Serial.println();
@@ -56,7 +46,11 @@ class LedManager{
       return true;
     }
 
+
     bool parsing_json(const char* data) {
+      /*
+      Get the timeline and the patterns.
+      */
       error = deserializeJson(led_json, data); 
       if(error) {
         Serial.println("Parsing Error: led_json");
@@ -69,24 +63,30 @@ class LedManager{
       return true;
     }
 
+
     void prepare_to_play(unsigned long s_time = 0, unsigned long delay_time = 0) {
       Serial.print("play from: ");
       Serial.println(s_time);
       playing_time = s_time;
       starting_time = s_time;
       set_frame_idx();
-      delay(delay_time - 45);
+      if(delay_time > 45) {
+        delay(delay_time - 45);
+      }
     }
-  
+
+
     void play() {
       Serial.println("Start Playing");
       starting_time_abs = millis();
       playing = true;
     }
 
+
     void pause() {
       playing = false;
     }
+
 
     void pause_dark() {
       playing = false;
@@ -95,6 +95,7 @@ class LedManager{
       frame_idx = 0;
       all_dark();
     }
+
 
     int hex_to_num(String hex, char color) {
       if(color == 'r') {
@@ -114,6 +115,7 @@ class LedManager{
       }
     }
 
+
     void show_frame() {
       Serial.println("showing frame");
       String src_sword = led_json[1][frame_idx]["status"]["LED_SWORD"]["src"]; // A name, which responds to a picture
@@ -128,10 +130,15 @@ class LedManager{
       String pic_handle = tmp_obj[src_handle];
       int now_time = led_json[1][frame_idx]["start"];
 
+      if(src_sword == NULL) {
+        return;
+      }
       Serial.print(src_sword);
       Serial.print(src_guard);
       Serial.println(src_handle);
 
+      // Dealing with the fade effect. 
+      // Using linear method to decide the brightness.
       if(fade == true) {
         alpha_sword = (alpha_sword * (next_time - playing_time) + next_s * (playing_time - now_time)) / (next_time - now_time);
         alpha_guard = (alpha_guard * (next_time - playing_time) + next_g * (playing_time - now_time)) / (next_time - now_time);
@@ -170,9 +177,9 @@ class LedManager{
         if(pic_guard[front] == ' ') {
           int num = atoi(pic_guard.substring(last, front).c_str());
           for(int j = 0; j < num; j++) {
-            SHIELD_leds[j+led_num].r = hex_to_num(pic_guard.substring(front + 1, front + 9), 'r') * alpha_guard;
-            SHIELD_leds[j+led_num].b = hex_to_num(pic_guard.substring(front + 1, front + 9), 'b') * alpha_guard;
-            SHIELD_leds[j+led_num].g = hex_to_num(pic_guard.substring(front + 1, front + 9), 'g') * alpha_guard;
+            GUARD_leds[j+led_num].r = hex_to_num(pic_guard.substring(front + 1, front + 9), 'r') * alpha_guard;
+            GUARD_leds[j+led_num].b = hex_to_num(pic_guard.substring(front + 1, front + 9), 'b') * alpha_guard;
+            GUARD_leds[j+led_num].g = hex_to_num(pic_guard.substring(front + 1, front + 9), 'g') * alpha_guard;
           }
           if(pic_guard.length() > front + 12) {
             front = front + 10;
@@ -201,9 +208,9 @@ class LedManager{
               HANDLE_leds[j+led_num - 8].g = hex_to_num(pic_handle.substring(front + 1, front + 9), 'g') * alpha_handle;
             }
             else {
-              SHIELD_leds[j+led_num].r = hex_to_num(pic_handle.substring(front + 1, front + 9), 'r') * alpha_guard;
-              SHIELD_leds[j+led_num].b = hex_to_num(pic_handle.substring(front + 1, front + 9), 'b') * alpha_guard;
-              SHIELD_leds[j+led_num].g = hex_to_num(pic_handle.substring(front + 1, front + 9), 'g') * alpha_guard;
+              GUARD_leds[j+led_num].r = hex_to_num(pic_handle.substring(front + 1, front + 9), 'r') * alpha_guard;
+              GUARD_leds[j+led_num].b = hex_to_num(pic_handle.substring(front + 1, front + 9), 'b') * alpha_guard;
+              GUARD_leds[j+led_num].g = hex_to_num(pic_handle.substring(front + 1, front + 9), 'g') * alpha_guard;
             }
           }
           if(pic_handle.length() > front + 12) {
@@ -220,42 +227,12 @@ class LedManager{
         }
       }
 
-/*
-      for(int i = 0; i < 59; i++) {
-        KNIFE_leds[i].r = hex_to_num(pic_sword[i], 'r') * alpha_sword;
-        KNIFE_leds[i].g = hex_to_num(pic_sword[i], 'g') * alpha_sword;
-        KNIFE_leds[i].b = hex_to_num(pic_sword[i], 'b') * alpha_sword;
-      }
-      for(int i = 0; i < 8; i++) {
-        SHIELD_leds[i].r = hex_to_num(pic_handle[i], 'r') * alpha_guard;
-        SHIELD_leds[i].g = hex_to_num(pic_handle[i], 'g') * alpha_guard;
-        SHIELD_leds[i].b = hex_to_num(pic_handle[i], 'b') * alpha_guard;
-      }
-      for(int i = 0; i < 18; i++) {
-        SHIELD_leds[i+8].r = hex_to_num(pic_guard[i], 'r') * alpha_guard;
-        SHIELD_leds[i+8].g = hex_to_num(pic_guard[i], 'g') * alpha_guard;
-        SHIELD_leds[i+8].b = hex_to_num(pic_guard[i], 'b') * alpha_guard;
-      }
-      for(int i = 0; i < 8; i++) {
-        HANDLE_leds[i].r = hex_to_num(pic_handle[i+8], 'r') * alpha_handle;
-        HANDLE_leds[i].g = hex_to_num(pic_handle[i+8], 'g') * alpha_handle;
-        HANDLE_leds[i].b = hex_to_num(pic_handle[i+8], 'b') * alpha_handle;
-      }
-*/
-
-
       FastLED.show();
       Serial.println(playing_time);
     }
 
+
     void light_current_status(DynamicJsonDocument data) {
-//      error = deserializeJson(tmp_json, data);
-//      if(error) {
-//        Serial.println("Parsing Error: status");
-//        Serial.println(error.c_str());
-//      }
-//      status = tmp_json[1];
-//      status = data;
       JsonObject tmp_data = data.as<JsonObject>();
       String src_sword = tmp_data["LED_SWORD"]["src"]; 
       double alpha_sword = tmp_data["LED_SWORD"]["alpha"];
@@ -301,9 +278,9 @@ class LedManager{
         if(pic_guard[front] == ' ') {
           int num = atoi(pic_guard.substring(last, front).c_str());
           for(int j = 0; j < num; j++) {
-            SHIELD_leds[j+led_num].r = hex_to_num(pic_guard.substring(front + 1, front + 9), 'r') * alpha_guard;
-            SHIELD_leds[j+led_num].b = hex_to_num(pic_guard.substring(front + 1, front + 9), 'b') * alpha_guard;
-            SHIELD_leds[j+led_num].g = hex_to_num(pic_guard.substring(front + 1, front + 9), 'g') * alpha_guard;
+            GUARD_leds[j+led_num].r = hex_to_num(pic_guard.substring(front + 1, front + 9), 'r') * alpha_guard;
+            GUARD_leds[j+led_num].b = hex_to_num(pic_guard.substring(front + 1, front + 9), 'b') * alpha_guard;
+            GUARD_leds[j+led_num].g = hex_to_num(pic_guard.substring(front + 1, front + 9), 'g') * alpha_guard;
           }
           if(pic_guard.length() > front + 12) {
             front = front + 10;
@@ -332,9 +309,9 @@ class LedManager{
               HANDLE_leds[j+led_num - 8].g = hex_to_num(pic_handle.substring(front + 1, front + 9), 'g') * alpha_handle;
             }
             else {
-              SHIELD_leds[j+led_num].r = hex_to_num(pic_handle.substring(front + 1, front + 9), 'r') * alpha_guard;
-              SHIELD_leds[j+led_num].b = hex_to_num(pic_handle.substring(front + 1, front + 9), 'b') * alpha_guard;
-              SHIELD_leds[j+led_num].g = hex_to_num(pic_handle.substring(front + 1, front + 9), 'g') * alpha_guard;
+              GUARD_leds[j+led_num].r = hex_to_num(pic_handle.substring(front + 1, front + 9), 'r') * alpha_guard;
+              GUARD_leds[j+led_num].b = hex_to_num(pic_handle.substring(front + 1, front + 9), 'b') * alpha_guard;
+              GUARD_leds[j+led_num].g = hex_to_num(pic_handle.substring(front + 1, front + 9), 'g') * alpha_guard;
             }
           }
           if(pic_handle.length() > front + 12) {
@@ -354,6 +331,7 @@ class LedManager{
       FastLED.show();
     }
 
+
     void set_frame_idx() {
       // To set the frame index, according to the playing time and the timeline
       while(!frame_end() && playing_time >= led_json[1][frame_idx + 1]["start"]) {
@@ -362,7 +340,9 @@ class LedManager{
       while(frame_idx != 0 && playing_time < led_json[1][frame_idx]["start"]) {
         frame_idx -= 1;
       }
+      Serial.println(frame_idx);
     }
+
 
     bool frame_end() {
       if(frame_idx == led_json[1].size() - 1){
@@ -372,12 +352,13 @@ class LedManager{
       return false;
     }
 
+
     void all_dark() {
       for(int i = 0; i < KNIFE_NUM; i++) {
         KNIFE_leds[i] = strtol("0x000000", NULL, 0);
       }
       for(int i = 0; i < SHIELD_NUM; i++) {
-        SHIELD_leds[i] = strtol("0x000000", NULL, 0);
+        GUARD_leds[i] = strtol("0x000000", NULL, 0);
       }
       for(int i = 0; i < HANDLE_NUM; i++) {
         HANDLE_leds[i] = strtol("0x000000", NULL, 0);
@@ -385,19 +366,11 @@ class LedManager{
       FastLED.show();
     }
 
+
     void loop() {
       if(playing) {
-        // Serial.println("now playing");
         playing_time = millis() - starting_time_abs + starting_time;
-        // Serial.print("playing_time: ");
-        // Serial.print(playing_time);
-        // Serial.print("starting_time_abs: ");
-        // Serial.println(starting_time_abs);
-        // Serial.print("frame_idx:");
-        // Serial.print(frame_idx);
-        // Serial.print(" led_json[1][frame_idx][\"start\"]:");
-        // serializeJson(led_json[1][frame_idx]["start"], Serial);
-        // Serial.println();
+
         if(frame_end()) {
           playing = false;
           starting_time_abs = 0;
@@ -411,12 +384,20 @@ class LedManager{
         }
 
         if(playing_time > led_json[1][frame_idx+1]["start"]){
+          try {
+            double test = led_json[1][frame_idx+1]["status"]["LED_SWORD"]["alpha"];
+          }
+          catch (const char e) {
+            Serial.println("data error");
+            frame_idx = frame_idx + 1;
+            return;
+          }
           Serial.print(playing_time);
           Serial.print("  ");
           serializeJson(led_json[1][frame_idx+1]["start"], Serial);
           Serial.println();
           frame_idx = frame_idx + 1;
-          Serial.println("showing frame");
+
           if(led_json[1][frame_idx]["fade"] == true) {
             fade = true;
             next_s = led_json[1][frame_idx+1]["status"]["LED_SWORD"]["alpha"];
@@ -427,8 +408,10 @@ class LedManager{
           else {
             fade = false;
           }
+
           show_frame();
         }
+
         else if (led_json[1][0]["start"] == 0 && playing_time == 0) {
           show_frame();
         }
@@ -436,14 +419,10 @@ class LedManager{
     }
     
 
-
   private:
     StaticJsonDocument<70000> led_json;
     StaticJsonDocument<10000> pic_json; 
     StaticJsonDocument<200> status;
-
-//    JsonArray status;
-//    StaticJsonDocument<5000> tmp_json;
 
     const char* pic_data_test = "{\
       \"bl_sword\": \"59 0x000000\", \
@@ -494,21 +473,28 @@ class LedManager{
       \"red_sword_25\":\"24 0x000000 3 0xFF0000 6 0x000000 3 0xFF0000 23 0x000000\", \
       \"red_sword_26\":\"25 0x000000 3 0xFF0000 4 0x000000 3 0xFF0000 24 0x000000\", \
       \"red_sword_27\":\"26 0x000000 3 0xFF0000 2 0x000000 3 0xFF0000 25 0x000000\", \
-      \"red_sword_28\":\"27 0x000000 6 0xFF0000 26 0x000000\", \
-      \"red_sword_ending_1\":\"26 0xFF0000 7 0x000000 26 0xFF0000\", \
-      \"red_sword_ending_2\":\"22 0xFF0000 15 0x000000 22 0xFF0000\", \
-      \"red_sword_ending_3\":\"18 0xFF0000 23 0x000000 18 0xFF0000\", \
-      \"red_sword_ending_4\":\"14 0xFF0000 31 0x000000 14 0xFF0000\", \
-      \"red_sword_ending_5\":\"10 0xFF0000 39 0x000000 10 0xFF0000\", \
-      \"red_sword_ending_6\":\"6 0xFF0000 47 0x000000 6 0xFF0000\" \
+      \"red_sword_shadow_1\":\"4 0xFF0000 51 0x000000 4 0xFF0000\", \
+      \"red_sword_shadow_2\":\"4 0x000000 4 0xFF0000 43 0x000000 4 0xFF0000 4 0x000000\", \
+      \"red_sword_shadow_3\":\"8 0x000000 4 0xFF0000 35 0x000000 4 0xFF0000 8 0x000000\", \
+      \"red_sword_shadow_4\":\"12 0x000000 4 0xFF0000 27 0x000000 4 0xFF0000 12 0x000000\", \
+      \"red_sword_shadow_5\":\"16 0x000000 4 0xFF0000 19 0x000000 4 0xFF0000 16 0x000000\", \
+      \"red_sword_shadow_6\":\"20 0x000000 5 0xFF0000 9 0x000000 5 0xFF0000 20 0x000000\", \
+      \"red_sword_shadow_7\":\"24 0x000000 11 0xFF0000 24 0x000000\", \
+      \"white_sword_1\":\"7 0xFFFFFF 45 0x000000 7 0xFFFFFF\", \
+      \"white_sword_2\":\"14 0xFFFFFF 31 0x000000 14 0xFFFFFF\", \
+      \"white_sword_3\":\"21 0xFFFFFF 17 0x000000 21 0xFFFFFF\", \
+      \"white_sword_ending1\":\"26 0xFFFFFF 7 0x000000 26 0xFFFFFF\", \
+      \"white_sword_ending2\":\"22 0xFFFFFF 15 0x000000 22 0xFFFFFF\", \
+      \"white_sword_ending3\":\"18 0xFFFFFF 23 0x000000 18 0xFFFFFF\", \
+      \"white_sword_ending4\":\"14 0xFFFFFF 31 0x000000 14 0xFFFFFF\", \
+      \"white_sword_ending5\":\"10 0xFFFFFF 39 0x000000 10 0xFFFFFF\", \
+      \"white_sword_ending6\":\"6 0xFFFFFF 47 0x000000 6 0xFFFFFF\", \
+      \"white_sword_ending7\":\"2 0xFFFFFF 55 0x000000 2 0xFFFFFF\" \
     }";
 
-    // TODO
-    
     CRGB KNIFE_leds[KNIFE_NUM];  //定義FastLED類別
-    CRGB SHIELD_leds[SHIELD_NUM];  //定義FastLED類別
+    CRGB GUARD_leds[GUARD_NUM];  //定義FastLED類別
     CRGB HANDLE_leds[HANDLE_NUM];  //定義FastLED類別
-
 
     DeserializationError error;
     unsigned long starting_time_abs; // absolute time when starting

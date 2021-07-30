@@ -1,6 +1,3 @@
-/*
- * WebSocketClient.ino
- */
 #include <Arduino.h>
 #include <WiFi32.h> // From github.com/1amchris/WiFi32.h
 #include <WebSocketsClient.h>
@@ -8,20 +5,22 @@
 #include <ArduinoJson.h>
 #include "LedManager.h"
 
-#define NAME "sword8"
-#define WIFI_NAME "MakerSpace_2.4G" // TODO
-#define WIFI_PWD "ntueesaad" // TODO
-#define SERVER_IP "192.168.0.200" // TODO
-#define SERVER_PORT 8080 // TODO
+// Sword name, wifi router and server info
+#define NAME "sword10"
+#define WIFI_NAME "MakerSpace_2.4G"
+#define WIFI_PWD "ntueesaad"
+#define SERVER_IP "192.168.0.200"
+#define SERVER_PORT 8080
 
-//StaticJsonDocument<90> doc;
 int doc;
-// DeserializationError error;
 WebSocketsClient webSocket;
 LedManager ledMgr;
 
-
 void testEvent(String s) {
+  /*
+  This function is used to test LedManager using keyboard.
+  Useful when the server hasn't been set yet.
+  */
   if (s[2] == 'u'){
     Serial.println("upload");
     ledMgr.pause();
@@ -48,10 +47,13 @@ void testEvent(String s) {
     }
   }
 }
-void webSocketEvent(WStype_t type, uint8_t *payload, size_t length)
-{
-  switch (type)
-  {
+
+
+void webSocketEvent(WStype_t type, uint8_t *payload, size_t length) {
+  /*
+  This function is used to get commands from the server and give responses back.
+  */
+  switch (type) {
     case WStype_DISCONNECTED:
       Serial.println("Websocket client disconnected");
       break;
@@ -70,7 +72,9 @@ void webSocketEvent(WStype_t type, uint8_t *payload, size_t length)
       Serial.println("Websocket client get text: ");
       Serial.println((char *)payload);
       Serial.println();
-
+      /*
+      commands: uploadcontrol, play, pause, stop, lightCurrentStatus
+      */
       if (*(((char *)payload) + 2) == 'u'){
         ledMgr.pause();
         if (ledMgr.parsing_json((char *)payload)) {
@@ -135,12 +139,13 @@ void webSocketEvent(WStype_t type, uint8_t *payload, size_t length)
 }
 
 
-void setup()
-{
+void setup() {
   Serial.begin(115200);
   Serial.println();
   Serial.println();
   delay(100);
+
+  // set up wifi
   WiFi.begin(WIFI_NAME, WIFI_PWD);
   if (testWifi()) {
     Serial.println("WiFi connected OK");
@@ -151,37 +156,24 @@ void setup()
     Serial.println("WiFi connected NG");
   }
   
+  // set up webSocket
   webSocket.begin(SERVER_IP, SERVER_PORT, "/"); // server address, port, URL
-  
   webSocket.onEvent(webSocketEvent); // event handler
-
   webSocket.setReconnectInterval(5000); // try ever 5000 again if connection has failed
   // heartbeat (optional): ping every 15000 ms; expect pong within 3000 ms; consider disconnected if pong is not received 2 times
   // webSocket.enableHeartbeat(15000, 3000, 2);
 
+  // set up led manager
   pinMode(13, INPUT); // Initialize the LED_BUILTIN pin as an output
   delay(10);
-  // char str[100];
-  // snprintf(str, 100, "{\"hostname\": \"%s\"}", NAME);
-  // Serial.println(str);
-  // webSocket.sendTXT(str);
   ledMgr.init();
   delay(1000);
-  Serial.println("ready");
-  ledMgr.pause_dark();
 
-//  String char_s = "[[{\"start\": 0,\"fade\": false, \"status\": {\"led_sword\": {\"src\": \"green\", \"alpha\": 1},}},\
-//        {\"start\": 3000,\"fade\": false, \"status\": {\"led_sword\": {\"src\": \"blue\", \"alpha\": 1},}},\
-//        {\"start\": 6000,\"fade\": false, \"status\": {\"led_sword\": {\"src\": \"dark\", \"alpha\": 0},}},\
-//        {\"start\": 90000,\"fade\": false, \"status\": {\"led_sword\": {\"src\": \"red\", \"alpha\": 1},}}\
-//        ]]";
-//    DynamicJsonDocument s_json(5000);
-//    deserializeJson(s_json, char_s);
-//    Serial.println("end of parsing");
-//    serializeJson(s_json, Serial);
-//    JsonArray s = s_json[0];
-//    ledMgr.parsing_json(s);
+  Serial.println("ready");
+  // at the beginning, all led dark, timeline to 0
+  ledMgr.pause_dark();
 }
+
 
 bool testWifi(void) {
   int c = 0;
@@ -195,14 +187,14 @@ bool testWifi(void) {
   return false;
 }
 
-void loop()
-{
+
+void loop() {
   webSocket.loop();
   ledMgr.loop();
-      
+  
+  // test
   // if (Serial.available() > 0) {
   //   String s = Serial.readString();
   //   testEvent(s);
   // }
-
 }
