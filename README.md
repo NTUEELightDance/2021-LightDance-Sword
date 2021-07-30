@@ -6,9 +6,9 @@ Get commands, call LedManager, response to the server.
 
 ## LedManager.h
 LED setting:
-* Knife: 60 leds. Controlled by pin 27.
-* Guard: 18+8 leds.  The first 18 are controlled by pin 26 and the others are controlled by pin 25.
-* Handle: 8 leds. Controlled by pin 25.
+* pin 27: 60 leds. The All leds are on the knife(刀身)
+* pin 26: 26 leds. The first 18 are on the guard(刀鐔) and the others are on the handle(刀柄).
+* pin 25: 8 leds. All on the handle.
 
 ## sword pattern
 Use swordLedGen.js to generate png sword files. 
